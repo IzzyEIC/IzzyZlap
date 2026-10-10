@@ -5,4 +5,10 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:colorAccent">#E8590C</item>
     </style>
+
+    <style name="Theme.Zlap.Capture" parent="Theme.Zlap">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
+    </style>
 </resources>

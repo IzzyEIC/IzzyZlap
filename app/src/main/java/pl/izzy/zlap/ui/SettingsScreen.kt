@@ -21,6 +21,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pl.izzy.zlap.app
+import pl.izzy.zlap.capture.BubbleService
 import pl.izzy.zlap.reminders.Reminders
 
 private val INTERVALS = listOf(5, 10, 15, 20, 30, 60)
@@ -51,6 +53,7 @@ fun SettingsScreen(onBack: () -> Unit, onSetup: () -> Unit) {
     var end by remember { mutableIntStateOf(settings.endMinutes) }
     var interval by remember { mutableIntStateOf(settings.intervalMinutes) }
     var choosingInterval by remember { mutableStateOf(false) }
+    var bubble by remember { mutableStateOf(settings.bubbleEnabled) }
 
     fun changed() {
         scope.launch { Reminders.reschedule(context) }
@@ -105,6 +108,17 @@ fun SettingsScreen(onBack: () -> Unit, onSetup: () -> Unit) {
                 )
             }
             SoundSettingRow()
+            ListItem(
+                headlineContent = { Text("Pływająca bańka") },
+                supportingContent = { Text("Pomarańczowe kółko nad innymi aplikacjami – stuknij, żeby złapać.") },
+                trailingContent = {
+                    Switch(checked = bubble, onCheckedChange = {
+                        bubble = it
+                        settings.bubbleEnabled = it
+                        BubbleService.sync(context)
+                    })
+                },
+            )
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             SettingRow(
                 title = "Konfiguracja telefonu",

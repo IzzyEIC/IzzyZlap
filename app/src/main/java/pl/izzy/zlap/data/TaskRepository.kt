@@ -16,16 +16,21 @@ class TaskRepository(private val context: Context, private val dao: TaskDao) {
         due: LocalDate,
         sourcePackage: String? = null,
         sourceApp: String? = null,
-    ) {
-        dao.insert(
+        sender: String? = null,
+        link: String? = null,
+    ): Long {
+        val id = dao.insert(
             Task(
                 title = title.trim(),
                 dueEpochDay = due.toEpochDay(),
                 sourcePackage = sourcePackage,
                 sourceApp = sourceApp,
+                sender = sender,
+                link = link,
             )
         )
         changed()
+        return id
     }
 
     suspend fun complete(task: Task) {

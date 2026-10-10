@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +56,9 @@ fun SetupScreen(onBack: () -> Unit) {
     val notifOk = remember(tick) { PhoneSetup.notificationsOk(context) }
     val exactOk = remember(tick) { PhoneSetup.exactAlarmsOk(context) }
     val batteryOk = remember(tick) { PhoneSetup.batteryOk(context) }
+    val listenerOk = remember(tick) { PhoneSetup.listenerOk(context) }
+    val overlayOk = remember(tick) { PhoneSetup.overlayOk(context) }
+    var popup by remember { mutableStateOf(settings.popupConfirmed) }
     var autostart by remember { mutableStateOf(settings.autostartConfirmed) }
     var locked by remember { mutableStateOf(settings.lockConfirmed) }
 
@@ -146,6 +150,43 @@ fun SetupScreen(onBack: () -> Unit) {
                 )
             }
 
+            Text("Łapanie z innych aplikacji", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+            Step(
+                number = 6,
+                title = "Dostęp do powiadomień",
+                description = "Dzięki temu Złap wie, od kogo jest wiadomość, i umie potem otworzyć tę rozmowę. " +
+                    "Jeśli przełącznik jest wyszarzony („Ustawienie ograniczone”): stuknij „Info o aplikacji”, " +
+                    "potem ⋮ w prawym górnym rogu → „Zezwól na ustawienia ograniczone” i spróbuj jeszcze raz.",
+                done = listenerOk,
+                actionLabel = "Włącz",
+                onAction = { PhoneSetup.openListenerSettings(context) },
+                secondaryLabel = "Info o aplikacji",
+                onSecondary = { PhoneSetup.openAppDetails(context) },
+            )
+            Step(
+                number = 7,
+                title = "Bańka nad innymi aplikacjami",
+                description = "Pozwól Złap „wyświetlać nad innymi aplikacjami”. Wtedy pomarańczowa bańka będzie widoczna np. w WhatsAppie.",
+                done = overlayOk,
+                actionLabel = "Zezwól",
+                onAction = { PhoneSetup.openOverlaySettings(context) },
+            )
+            if (PhoneSetup.isXiaomi) {
+                Step(
+                    number = 8,
+                    title = "Wyskakujące okna w tle",
+                    description = "W „Inne uprawnienia” włącz „Wyświetlaj wyskakujące okna podczas działania w tle”. " +
+                        "Bez tego stuknięcie bańki nic nie zrobi. Potem zaznacz, że gotowe.",
+                    done = popup,
+                    actionLabel = "Otwórz",
+                    onAction = { PhoneSetup.openMiuiPermissions(context) },
+                    onConfirm = {
+                        popup = it
+                        settings.popupConfirmed = it
+                    },
+                )
+            }
+
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sprawdź, czy działa", style = MaterialTheme.typography.titleMedium)
@@ -172,6 +213,8 @@ private fun Step(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     onConfirm: ((Boolean) -> Unit)? = null,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -195,6 +238,9 @@ private fun Step(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                 if (actionLabel != null && onAction != null && (!done || onConfirm != null)) {
                     FilledTonalButton(onClick = onAction) { Text(actionLabel) }
+                }
+                if (!done && secondaryLabel != null && onSecondary != null) {
+                    TextButton(onClick = onSecondary) { Text(secondaryLabel) }
                 }
                 if (onConfirm != null) {
                     Spacer(Modifier.weight(1f))

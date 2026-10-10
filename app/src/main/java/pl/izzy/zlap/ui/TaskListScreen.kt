@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import pl.izzy.zlap.app
+import pl.izzy.zlap.capture.SourceOpener
 import pl.izzy.zlap.data.Task
 import pl.izzy.zlap.setup.PhoneSetup
 import java.time.LocalDate
@@ -134,10 +135,10 @@ fun TaskListScreen(onSettings: () -> Unit, onSetup: () -> Unit) {
                             }
                         },
                         onDelete = { withUndo("Usunięte", task) { repo.delete(task) } },
-                        onOpen = task.sourcePackage?.let { pkg ->
-                            context.packageManager.getLaunchIntentForPackage(pkg)?.let { intent ->
-                                { context.startActivity(intent) }
-                            }
+                        onOpen = if (SourceOpener.canOpen(task)) {
+                            { SourceOpener.open(context, task) }
+                        } else {
+                            null
                         },
                     )
                 }
@@ -185,7 +186,7 @@ private fun TaskCard(
     val due = LocalDate.ofEpochDay(task.dueEpochDay)
     val overdue = due.isBefore(today)
     val meta = listOfNotNull(
-        task.sourceApp?.let { "z $it" },
+        listOfNotNull(task.sourceApp, task.sender).joinToString(" · ").ifEmpty { null },
         if (overdue) "termin: ${dayLabel(due, today)}" else null,
     ).joinToString(" · ")
 
@@ -202,6 +203,14 @@ private fun TaskCard(
                     meta,
                     style = MaterialTheme.typography.bodySmall,
                     color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (onOpen != null) {
+                Text(
+                    if (task.sender != null) "↗ Otwórz rozmowę: ${task.sender}" else "↗ Otwórz ${task.sourceApp ?: "aplikację"}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp).clickable(onClick = onOpen),
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -255,7 +264,7 @@ private fun EmptyState() {
         Text("Pusto – nic do zrobienia 🎉", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.size(8.dp))
         Text(
-            "Gdy coś wpadnie w trakcie dnia, dodaj to przyciskiem „Dodaj”. Przypomnę Ci wieczorem.",
+            "Gdy coś wpadnie w trakcie dnia, stuknij pomarańczową bańkę albo „Dodaj”. Przypomnę Ci wieczorem.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

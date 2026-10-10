@@ -48,6 +48,23 @@ class ZlapSettings(context: Context) {
         get() = prefs.getInt("channelVersion", 0)
         set(value) = prefs.edit().putInt("channelVersion", value).apply()
 
+    var bubbleEnabled: Boolean
+        get() = prefs.getBoolean("bubble", true)
+        set(value) = prefs.edit().putBoolean("bubble", value).apply()
+
+    var bubbleX: Int
+        get() = prefs.getInt("bubbleX", 0)
+        set(value) = prefs.edit().putInt("bubbleX", value).apply()
+
+    var bubbleY: Int
+        get() = prefs.getInt("bubbleY", 600)
+        set(value) = prefs.edit().putInt("bubbleY", value).apply()
+
+    /** MIUI: „Wyświetlaj wyskakujące okna w tle” – nie da się tego sprawdzić programowo. */
+    var popupConfirmed: Boolean
+        get() = prefs.getBoolean("popup", false)
+        set(value) = prefs.edit().putBoolean("popup", value).apply()
+
     val startTime: LocalTime get() = LocalTime.of(startMinutes / 60, startMinutes % 60)
     val endTime: LocalTime get() = LocalTime.of(endMinutes / 60, endMinutes % 60)
 

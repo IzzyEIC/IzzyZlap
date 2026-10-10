@@ -84,13 +84,13 @@ object Notifier {
 
         val title = if (due.size == 1) "Masz 1 rzecz do zrobienia" else "Masz ${due.size} rzeczy do zrobienia"
         val style = NotificationCompat.InboxStyle().setBigContentTitle(title)
-        due.take(MAX_LINES).forEach { style.addLine("• ${it.title}") }
+        due.take(MAX_LINES).forEach { style.addLine("• ${it.label}") }
         if (due.size > MAX_LINES) style.setSummaryText("+ jeszcze ${due.size - MAX_LINES}")
 
         val notification = NotificationCompat.Builder(context, channelId(context))
             .setSmallIcon(R.drawable.ic_stat_zlap)
             .setContentTitle(title)
-            .setContentText(due.joinToString(", ") { it.title })
+            .setContentText(due.joinToString(", ") { it.label })
             .setStyle(style)
             .setContentIntent(openApp(context))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
@@ -120,6 +120,35 @@ object Notifier {
             .build()
         nm.notify(TEST_ID, notification)
     }
+
+    private const val BUBBLE_CHANNEL_ID = "bubble"
+    const val BUBBLE_NOTIFICATION_ID = 1003
+
+    /** Stałe, ciche powiadomienie, bez którego Android nie pozwala bańce działać w tle. */
+    fun bubbleNotification(context: Context): android.app.Notification {
+        manager(context).createNotificationChannel(
+            NotificationChannel(BUBBLE_CHANNEL_ID, "Bańka Złap", NotificationManager.IMPORTANCE_MIN).apply {
+                description = "Stałe powiadomienie, dzięki któremu bańka działa nad innymi aplikacjami"
+                setShowBadge(false)
+            }
+        )
+        val capture = PendingIntent.getActivity(
+            context,
+            1,
+            pl.izzy.zlap.capture.CaptureActivity.intent(context),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return NotificationCompat.Builder(context, BUBBLE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_zlap)
+            .setContentTitle("Złap jest gotowa")
+            .setContentText("Stuknij, żeby złapać coś na później")
+            .setContentIntent(capture)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .build()
+    }
+
+    private val Task.label: String get() = if (sender != null) "$sender: $title" else title
 
     private fun openApp(context: Context): PendingIntent =
         PendingIntent.getActivity(

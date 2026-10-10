@@ -11,6 +11,10 @@ data class Task(
     /** Aplikacja, z której złapano zadanie (np. com.whatsapp) – do szybkiego powrotu. */
     val sourcePackage: String? = null,
     val sourceApp: String? = null,
+    /** Od kogo (nadawca z powiadomienia). */
+    val sender: String? = null,
+    /** Trwały link do rozmowy (np. https://wa.me/48..., smsto:...), gdy da się go ustalić. */
+    val link: String? = null,
     val dueEpochDay: Long,
     val done: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),

@@ -11,7 +11,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import pl.izzy.zlap.ZlapSettings
+import pl.izzy.zlap.capture.CaptureListener
 
 /** Sprawdzanie i otwieranie ustawień, bez których Xiaomi usypia przypomnienia. */
 object PhoneSetup {
@@ -30,8 +32,43 @@ object PhoneSetup {
     fun batteryOk(c: Context): Boolean =
         c.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(c.packageName)
 
+    fun listenerOk(c: Context): Boolean =
+        NotificationManagerCompat.getEnabledListenerPackages(c).contains(c.packageName)
+
+    fun overlayOk(c: Context): Boolean = Settings.canDrawOverlays(c)
+
     fun needsAttention(c: Context, s: ZlapSettings): Boolean =
-        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || (isXiaomi && !s.autostartConfirmed)
+        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || !listenerOk(c) ||
+            (s.bubbleEnabled && !overlayOk(c)) ||
+            (isXiaomi && (!s.autostartConfirmed || (s.bubbleEnabled && !s.popupConfirmed)))
+
+    fun openListenerSettings(c: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            start(
+                c,
+                Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
+                    Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                    ComponentName(c, CaptureListener::class.java).flattenToString(),
+                ),
+            )
+        } else {
+            start(c, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+    }
+
+    fun openOverlaySettings(c: Context) {
+        start(c, Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, packageUri(c)))
+    }
+
+    /** MIUI: ekran „Inne uprawnienia” z „Wyświetlaj wyskakujące okna w tle”. */
+    fun openMiuiPermissions(c: Context) {
+        start(
+            c,
+            Intent("miui.intent.action.APP_PERM_EDITOR")
+                .setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+                .putExtra("extra_pkgname", c.packageName),
+        )
+    }
 
     fun openNotificationSettings(c: Context) {
         start(c, Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, c.packageName))

@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import pl.izzy.zlap.capture.BubbleService
 import pl.izzy.zlap.reminders.Reminders
 
 class MainActivity : ComponentActivity() {
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Na wszelki wypadek: alarm zawsze ustawiony, gdy otwierasz aplikację
         lifecycleScope.launch { Reminders.reschedule(this@MainActivity) }
+        BubbleService.sync(this)
     }
 }
 
