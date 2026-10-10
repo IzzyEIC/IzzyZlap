@@ -40,7 +40,14 @@ jobs:
       - name: Build
         env:
           ZLAP_KEYSTORE_PASSWORD: ${{ secrets.ZLAP_KEYSTORE_PASSWORD }}
-        run: gradle assembleRelease --no-daemon
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon 2>&1 | tee build.log
+
+      # Błędy kompilacji jako adnotacje – widoczne bez logowania do GitHuba
+      - name: Report compile errors
+        if: failure()
+        run: grep -E "^e: |error:" build.log | head -20 | sed 's/^/::error::/' || true
 
       - name: Rename APK
         if: steps.key.outputs.present == 'true'
