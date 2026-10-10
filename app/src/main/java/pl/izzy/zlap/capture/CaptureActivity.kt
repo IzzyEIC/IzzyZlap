@@ -130,7 +130,7 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
     }
     var text by remember { mutableStateOf(sharedText ?: selected?.text.orEmpty()) }
     var edited by remember { mutableStateOf(sharedText != null) }
-    var due by remember { mutableStateOf(today) }
+    var due by remember { mutableStateOf(context.app.settings.defaultDueDate()) }
 
     // Skopiowany tekst ma pierwszeństwo przed treścią powiadomienia
     LaunchedEffect(clipText) {
@@ -153,8 +153,7 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
                 link = source?.link,
             )
             source?.contentIntent?.let { RecentStore.attach(id, it) }
-            val whenLabel = if (due == today) "dziś o ${formatMinutes(context.app.settings.startMinutes)}" else dayLabel(due, today)
-            Toast.makeText(context, "Złapane ✓ Przypomnę $whenLabel", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Złapane ✓ Przypomnę ${context.app.settings.reminderLabel(due)}", Toast.LENGTH_SHORT).show()
             onClose()
         }
     }

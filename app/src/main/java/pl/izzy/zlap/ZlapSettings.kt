@@ -1,6 +1,8 @@
 package pl.izzy.zlap
 
 import android.content.Context
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 class ZlapSettings(context: Context) {
@@ -68,5 +70,26 @@ class ZlapSettings(context: Context) {
     val startTime: LocalTime get() = LocalTime.of(startMinutes / 60, startMinutes % 60)
     val endTime: LocalTime get() = LocalTime.of(endMinutes / 60, endMinutes % 60)
 
-    fun isInWindow(time: LocalTime): Boolean = !time.isBefore(startTime) && !time.isAfter(endTime)
+    /** [graceMinutes] pozwala przepuścić alarm, który system dostarczył z lekkim opóźnieniem. */
+    fun isInWindow(time: LocalTime, graceMinutes: Int = 0): Boolean {
+        val minute = time.hour * 60 + time.minute
+        return minute >= startMinutes && minute <= endMinutes + graceMinutes
+    }
+
+    /** Po godzinie ciszy „dziś” już minęło – nowe rzeczy trafiają na jutro. */
+    fun defaultDueDate(now: LocalDateTime = LocalDateTime.now()): LocalDate =
+        if (now.toLocalTime().hour * 60 + now.toLocalTime().minute > endMinutes) now.toLocalDate().plusDays(1)
+        else now.toLocalDate()
+
+    /** Np. „dziś o 18:00”, „jutro o 18:00”, „piątek, 17 października o 18:00”. */
+    fun reminderLabel(due: LocalDate, now: LocalDateTime = LocalDateTime.now()): String {
+        val today = now.toLocalDate()
+        val start = "%02d:%02d".format(startMinutes / 60, startMinutes % 60)
+        return when {
+            due.isAfter(today) -> "${pl.izzy.zlap.ui.dayLabel(due, today)} o $start"
+            isInWindow(now.toLocalTime()) -> "dziś, w ciągu kwadransa"
+            defaultDueDate(now) == today -> "dziś o $start"
+            else -> "jutro o $start"
+        }
+    }
 }

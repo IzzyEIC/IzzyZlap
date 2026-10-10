@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import pl.izzy.zlap.app
 import java.time.LocalDate
 
 @Composable
@@ -33,7 +34,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onSave: (String, LocalDate) -> Unit) {
     val today = remember { LocalDate.now() }
     val tomorrow = remember { today.plusDays(1) }
     var text by rememberSaveable { mutableStateOf("") }
-    var due by remember { mutableStateOf(today) }
+    var due by remember { mutableStateOf(context.app.settings.defaultDueDate()) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
 
