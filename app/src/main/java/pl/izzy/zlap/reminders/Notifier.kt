@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import pl.izzy.zlap.R
 import pl.izzy.zlap.app
 import pl.izzy.zlap.data.Task
+import pl.izzy.zlap.data.tidy
 import pl.izzy.zlap.ui.MainActivity
 
 /** Zawsze jedno zbiorcze powiadomienie zamiast osobnego dla każdej rzeczy. */
@@ -148,7 +149,8 @@ object Notifier {
             .build()
     }
 
-    private val Task.label: String get() = if (sender != null) "$sender: $title" else title
+    private val Task.label: String
+        get() = title.tidy().replace('\n', ' ').let { if (sender != null) "$sender: $it" else it }
 
     private fun openApp(context: Context): PendingIntent =
         PendingIntent.getActivity(

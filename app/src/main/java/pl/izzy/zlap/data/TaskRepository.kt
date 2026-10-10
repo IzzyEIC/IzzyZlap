@@ -21,7 +21,7 @@ class TaskRepository(private val context: Context, private val dao: TaskDao) {
     ): Long {
         val id = dao.insert(
             Task(
-                title = title.trim(),
+                title = title.tidy(),
                 dueEpochDay = due.toEpochDay(),
                 sourcePackage = sourcePackage,
                 sourceApp = sourceApp,

@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
 import pl.izzy.zlap.app
 import pl.izzy.zlap.capture.SourceOpener
 import pl.izzy.zlap.data.Task
+import pl.izzy.zlap.data.tidy
 import pl.izzy.zlap.setup.PhoneSetup
 import java.time.LocalDate
 
@@ -235,7 +236,7 @@ private fun TaskCard(
                     .alpha(contentAlpha),
             ) {
                 Text(
-                    task.title,
+                    task.title.tidy(),
                     style = MaterialTheme.typography.bodyLarge,
                     textDecoration = if (checked) TextDecoration.LineThrough else null,
                 )

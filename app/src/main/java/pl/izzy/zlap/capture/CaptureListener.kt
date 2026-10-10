@@ -7,6 +7,7 @@ import android.provider.Telephony
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
+import pl.izzy.zlap.data.tidy
 
 /** Zapamiętuje przychodzące powiadomienia, żeby przy łapaniu było wiadomo, od kogo i skąd. */
 class CaptureListener : NotificationListenerService() {
@@ -99,7 +100,7 @@ class CaptureListener : NotificationListenerService() {
                 packageName = sbn.packageName,
                 appName = appLabel(context, sbn.packageName),
                 sender = sender?.trim(),
-                text = text?.trim(),
+                text = text?.tidy(),
                 postedAt = sbn.postTime,
                 contentIntent = n.contentIntent,
                 link = linkFor(context, sbn.packageName, last?.person?.uri, last?.person?.key),
