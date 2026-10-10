@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 
 /** Aplikacja pod bańką i – w komunikatorach – nazwa otwartej rozmowy. */
 data class ChatInfo(val packageName: String, val title: String?)
@@ -70,9 +71,8 @@ class ChatReaderService : AccessibilityService() {
         /** Wywoływane przy stuknięciu bańki – zanim okienko Złap przykryje ekran. */
         fun readCurrentChat(): ChatInfo? {
             val service = instance ?: return null
-            val root = service.rootInActiveWindow ?: return null
+            val root = appWindowRoot(service) ?: return null
             val pkg = root.packageName?.toString() ?: return null
-            if (pkg == service.packageName) return null
             if (pkg !in MESSENGERS) return ChatInfo(pkg, null)
 
             val title = TITLE_IDS.firstNotNullOfOrNull { id ->
@@ -81,6 +81,20 @@ class ChatReaderService : AccessibilityService() {
 
             // W trybie zaznaczania wiadomości pasek pokazuje samą liczbę („1”) – to nie jest nazwa
             return ChatInfo(pkg, title?.trim()?.takeIf { it.isNotEmpty() && !it.all(Char::isDigit) })
+        }
+
+        /**
+         * Okno aplikacji pod bańką. Nie używamy rootInActiveWindow: w chwili stuknięcia
+         * „aktywnym” oknem bywa sama bańka. Lista okien jest od najwyższego.
+         */
+        private fun appWindowRoot(service: AccessibilityService): AccessibilityNodeInfo? {
+            val fromWindows = service.windows
+                .filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+                .firstNotNullOfOrNull { window ->
+                    window.root?.takeIf { it.packageName?.toString() != service.packageName }
+                }
+            return fromWindows
+                ?: service.rootInActiveWindow?.takeIf { it.packageName?.toString() != service.packageName }
         }
 
         /** Pierwszy tekst w górnym pasku ekranu – tytuł rozmowy w większości komunikatorów. */

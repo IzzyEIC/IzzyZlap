@@ -157,6 +157,7 @@ private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?
         .collectAsStateWithLifecycle<List<RecentMessage>?>(initialValue = null)
     val recent = loaded.orEmpty()
     val listenerOk = remember { PhoneSetup.listenerOk(context) }
+    val readerOn = remember { PhoneSetup.chatReaderOk(context) }
     // Ułatwienia dostępu wiedzą najdokładniej; bez nich – dane o użyciu
     val where = remember {
         chat?.let { ForegroundApp.Where.App(it.packageName, ForegroundApp.label(context, it.packageName)) }
@@ -256,6 +257,17 @@ private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("Złap na później", style = MaterialTheme.typography.titleLarge)
+                if (readerOn && where != ForegroundApp.Where.Home) {
+                    Text(
+                        when {
+                            chat?.title != null -> "Otwarta rozmowa: ${chat.title}"
+                            chat != null -> "Aplikacja: ${ForegroundApp.label(context, chat.packageName)} (nie rozpoznano rozmowy)"
+                            else -> "Nie udało się odczytać ekranu"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 if (!listenerOk) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
