@@ -29,6 +29,25 @@ class ZlapSettings(context: Context) {
         get() = prefs.getBoolean("lock", false)
         set(value) = prefs.edit().putBoolean("lock", value).apply()
 
+    /** Dźwięk przypomnienia; null = domyślny dźwięk powiadomień. */
+    var soundUri: String?
+        get() = prefs.getString("soundUri", null)
+        set(value) = prefs.edit().putString("soundUri", value).apply()
+
+    var soundName: String?
+        get() = prefs.getString("soundName", null)
+        set(value) = prefs.edit().putString("soundName", value).apply()
+
+    /** Czy plik dźwięku zaimportowała Złap (wtedy usuwamy go przy zmianie). */
+    var soundOwned: Boolean
+        get() = prefs.getBoolean("soundOwned", false)
+        set(value) = prefs.edit().putBoolean("soundOwned", value).apply()
+
+    /** Dźwięku kanału nie da się zmienić po utworzeniu, więc każda zmiana tworzy nowy kanał. */
+    var channelVersion: Int
+        get() = prefs.getInt("channelVersion", 0)
+        set(value) = prefs.edit().putInt("channelVersion", value).apply()
+
     val startTime: LocalTime get() = LocalTime.of(startMinutes / 60, startMinutes % 60)
     val endTime: LocalTime get() = LocalTime.of(endMinutes / 60, endMinutes % 60)
 

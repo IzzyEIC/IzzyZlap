@@ -104,6 +104,7 @@ fun SettingsScreen(onBack: () -> Unit, onSetup: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
+            SoundSettingRow()
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             SettingRow(
                 title = "Konfiguracja telefonu",
