@@ -47,7 +47,8 @@ jobs:
       # Błędy kompilacji jako adnotacje – widoczne bez logowania do GitHuba
       - name: Report compile errors
         if: failure()
-        run: grep -E "^e: |error:" build.log | head -20 | sed 's/^/::error::/' || true
+        run: |
+          grep -E "^e: |error:" build.log | head -20 | sed 's/^/::error::/' || true
 
       - name: Rename APK
         if: steps.key.outputs.present == 'true'
