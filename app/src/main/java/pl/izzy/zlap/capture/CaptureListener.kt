@@ -22,7 +22,7 @@ class CaptureListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) = record(sbn)
 
     private fun record(sbn: StatusBarNotification) {
-        parse(this, sbn)?.let(RecentStore::add)
+        parse(this, sbn)?.let { RecentStore.add(this, it) }
     }
 
     companion object {

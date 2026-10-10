@@ -118,18 +118,24 @@ private const val PRESELECT_MAX_AGE_MS = 30 * 60 * 1000L
 private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val recent by RecentStore.items.collectAsStateWithLifecycle()
+    val recent by remember { RecentStore.items(context) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val listenerOk = remember { PhoneSetup.listenerOk(context) }
     val today = remember { LocalDate.now() }
     val tomorrow = remember { today.plusDays(1) }
 
-    var selected by remember {
-        mutableStateOf(
-            RecentStore.items.value.firstOrNull { System.currentTimeMillis() - it.postedAt < PRESELECT_MAX_AGE_MS }
-        )
-    }
-    var text by remember { mutableStateOf(sharedText ?: selected?.text.orEmpty()) }
+    var selected by remember { mutableStateOf<RecentMessage?>(null) }
+    var text by remember { mutableStateOf(sharedText.orEmpty()) }
     var edited by remember { mutableStateOf(sharedText != null) }
+    var preselected by remember { mutableStateOf(false) }
+
+    // Lista wczytuje się z bazy – po pierwszym wczytaniu zaznaczamy najświeższą wiadomość
+    LaunchedEffect(recent) {
+        if (!preselected && recent.isNotEmpty()) {
+            preselected = true
+            selected = recent.firstOrNull { System.currentTimeMillis() - it.postedAt < PRESELECT_MAX_AGE_MS }
+            if (!edited) text = selected?.text.orEmpty()
+        }
+    }
     var due by remember { mutableStateOf(context.app.settings.defaultDueDate()) }
 
     // Skopiowany tekst ma pierwszeństwo przed treścią powiadomienia
