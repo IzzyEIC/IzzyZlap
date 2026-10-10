@@ -40,6 +40,7 @@ class BubbleService : Service() {
             startForeground(Notifier.BUBBLE_NOTIFICATION_ID, notification)
         }
         showBubble()
+        CaptureListener.ensureConnected(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

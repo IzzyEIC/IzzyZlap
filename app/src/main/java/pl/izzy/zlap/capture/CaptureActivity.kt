@@ -71,6 +71,7 @@ class CaptureActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        CaptureListener.ensureConnected(this)
         val shared = sharedText(intent)
         val chat = intent.getStringExtra(EXTRA_CHAT_PACKAGE)?.let { ChatInfo(it, intent.getStringExtra(EXTRA_CHAT_TITLE)) }
         setContent {
@@ -313,6 +314,15 @@ private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+
+                if (listenerOk && !CaptureListener.isConnected) {
+                    Text(
+                        "Złap jest chwilowo odłączona od powiadomień – podłączam ponownie. " +
+                            "Jeśli to się powtarza: wyłącz i włącz jej dostęp do powiadomień (krok 6).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
 
                 if (listenerOk && shown.isEmpty()) {

@@ -34,6 +34,15 @@ class CaptureListener : NotificationListenerService() {
         @Volatile
         private var instance: CaptureListener? = null
 
+        val isConnected: Boolean get() = instance != null
+
+        /** MIUI potrafi odłączyć nasłuch (np. po aktualizacji) – prosimy system o ponowne podłączenie. */
+        fun ensureConnected(context: Context) {
+            if (instance == null && pl.izzy.zlap.setup.PhoneSetup.listenerOk(context)) {
+                NotificationListenerService.requestRebind(android.content.ComponentName(context, CaptureListener::class.java))
+            }
+        }
+
         /** To, co teraz wisi na pasku powiadomień (bez zamkniętych). null = brak połączenia. */
         fun visibleNow(context: Context): List<RecentMessage>? {
             val listener = instance ?: return null

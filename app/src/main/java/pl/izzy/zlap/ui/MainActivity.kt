@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
         // Na wszelki wypadek: alarm zawsze ustawiony, gdy otwierasz aplikację
         lifecycleScope.launch { Reminders.reschedule(this@MainActivity) }
         BubbleService.sync(this)
+        pl.izzy.zlap.capture.CaptureListener.ensureConnected(this)
     }
 }
 
