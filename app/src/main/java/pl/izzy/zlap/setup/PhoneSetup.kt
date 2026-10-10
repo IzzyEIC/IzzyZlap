@@ -14,6 +14,7 @@ import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import pl.izzy.zlap.ZlapSettings
 import pl.izzy.zlap.capture.CaptureListener
+import pl.izzy.zlap.capture.ForegroundApp
 
 /** Sprawdzanie i otwieranie ustawień, bez których Xiaomi usypia przypomnienia. */
 object PhoneSetup {
@@ -37,8 +38,18 @@ object PhoneSetup {
 
     fun overlayOk(c: Context): Boolean = Settings.canDrawOverlays(c)
 
+    fun usageOk(c: Context): Boolean = ForegroundApp.hasPermission(c)
+
+    fun openUsageSettings(c: Context) {
+        try {
+            c.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, packageUri(c)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            start(c, Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }
+    }
+
     fun needsAttention(c: Context, s: ZlapSettings): Boolean =
-        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || !listenerOk(c) ||
+        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || !listenerOk(c) || !usageOk(c) ||
             (s.bubbleEnabled && !overlayOk(c)) ||
             (isXiaomi && (!s.autostartConfirmed || (s.bubbleEnabled && !s.popupConfirmed)))
 

@@ -12,11 +12,16 @@ import androidx.core.app.NotificationCompat
 class CaptureListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
+        instance = this
         try {
             activeNotifications?.sortedBy { it.postTime }?.forEach(::record)
         } catch (e: SecurityException) {
             // Uprawnienie właśnie cofnięte
         }
+    }
+
+    override fun onListenerDisconnected() {
+        instance = null
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) = record(sbn)
@@ -26,6 +31,22 @@ class CaptureListener : NotificationListenerService() {
     }
 
     companion object {
+        @Volatile
+        private var instance: CaptureListener? = null
+
+        /** To, co teraz wisi na pasku powiadomień (bez zamkniętych). null = brak połączenia. */
+        fun visibleNow(context: Context): List<RecentMessage>? {
+            val listener = instance ?: return null
+            return try {
+                listener.activeNotifications
+                    ?.mapNotNull { parse(context, it) }
+                    ?.sortedByDescending { it.postedAt }
+                    .orEmpty()
+            } catch (e: SecurityException) {
+                null
+            }
+        }
+
         private val SKIPPED_CATEGORIES = setOf(
             Notification.CATEGORY_TRANSPORT,
             Notification.CATEGORY_PROGRESS,

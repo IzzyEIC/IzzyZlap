@@ -11,7 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -114,25 +116,48 @@ class CaptureActivity : ComponentActivity() {
 
 private const val PRESELECT_MAX_AGE_MS = 30 * 60 * 1000L
 
+private enum class Mode { App, Shade, All }
+
 @Composable
 private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val recent by remember { RecentStore.items(context) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val listenerOk = remember { PhoneSetup.listenerOk(context) }
+    val where = remember { ForegroundApp.detect(context) }
+    val shade = remember { CaptureListener.visibleNow(context) }
+    var mode by remember {
+        mutableStateOf(
+            when {
+                where is ForegroundApp.Where.App -> Mode.App
+                shade != null -> Mode.Shade
+                else -> Mode.All
+            }
+        )
+    }
+    val shown = when (mode) {
+        Mode.App -> recent.filter { it.packageName == (where as? ForegroundApp.Where.App)?.packageName }
+        Mode.Shade -> shade.orEmpty()
+        Mode.All -> recent
+    }
     val today = remember { LocalDate.now() }
     val tomorrow = remember { today.plusDays(1) }
 
     var selected by remember { mutableStateOf<RecentMessage?>(null) }
     var text by remember { mutableStateOf(sharedText.orEmpty()) }
     var edited by remember { mutableStateOf(sharedText != null) }
-    var preselected by remember { mutableStateOf(false) }
+    var preselectedFor by remember { mutableStateOf<Mode?>(null) }
 
-    // Lista wczytuje się z bazy – po pierwszym wczytaniu zaznaczamy najświeższą wiadomość
-    LaunchedEffect(recent) {
-        if (!preselected && recent.isNotEmpty()) {
-            preselected = true
-            selected = recent.firstOrNull { System.currentTimeMillis() - it.postedAt < PRESELECT_MAX_AGE_MS }
+    // Po wczytaniu listy (i po zmianie źródła) zaznaczamy najświeższą wiadomość.
+    // W trybie aplikacji zawsze – to niemal na pewno ta, na którą właśnie patrzysz.
+    LaunchedEffect(shown, mode) {
+        if (preselectedFor != mode && shown.isNotEmpty()) {
+            preselectedFor = mode
+            selected = if (mode == Mode.App) {
+                shown.first()
+            } else {
+                shown.firstOrNull { System.currentTimeMillis() - it.postedAt < PRESELECT_MAX_AGE_MS }
+            }
             if (!edited) text = selected?.text.orEmpty()
         }
     }
@@ -196,13 +221,58 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
                     }
                 }
 
-                if (recent.isNotEmpty()) {
-                    Text("Od kogo / skąd", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                if (listenerOk) {
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (where is ForegroundApp.Where.App) {
+                            FilterChip(
+                                selected = mode == Mode.App,
+                                onClick = { mode = Mode.App },
+                                label = { Text(where.label) },
+                            )
+                        }
+                        if (shade != null) {
+                            FilterChip(
+                                selected = mode == Mode.Shade,
+                                onClick = { mode = Mode.Shade },
+                                label = { Text("Pasek powiadomień") },
+                            )
+                        }
+                        FilterChip(
+                            selected = mode == Mode.All,
+                            onClick = { mode = Mode.All },
+                            label = { Text("Ostatnie 24 h") },
+                        )
+                    }
+                    if (where == ForegroundApp.Where.Unknown) {
+                        Text(
+                            "Włącz „Dostęp do danych o użyciu” w konfiguracji, a Złap sama pokaże wiadomości z aplikacji, w której jesteś.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (listenerOk && shown.isEmpty()) {
+                    Text(
+                        when (mode) {
+                            Mode.App -> "Brak wiadomości z tej aplikacji z ostatnich 24 h. Wpisz, co zrobić, poniżej."
+                            Mode.Shade -> "Pasek powiadomień jest pusty."
+                            Mode.All -> "Brak powiadomień z ostatnich 24 h."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (shown.isNotEmpty()) {
                     LazyColumn(
                         Modifier.heightIn(max = 220.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        items(recent, key = { it.key }) { message ->
+                        items(shown, key = { it.key }) { message ->
                             RecentRow(
                                 message = message,
                                 selected = message.key == selected?.key,

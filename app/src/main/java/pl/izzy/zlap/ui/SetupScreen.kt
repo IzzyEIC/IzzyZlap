@@ -58,6 +58,7 @@ fun SetupScreen(onBack: () -> Unit) {
     val batteryOk = remember(tick) { PhoneSetup.batteryOk(context) }
     val listenerOk = remember(tick) { PhoneSetup.listenerOk(context) }
     val overlayOk = remember(tick) { PhoneSetup.overlayOk(context) }
+    val usageOk = remember(tick) { PhoneSetup.usageOk(context) }
     var popup by remember { mutableStateOf(settings.popupConfirmed) }
     var autostart by remember { mutableStateOf(settings.autostartConfirmed) }
     var locked by remember { mutableStateOf(settings.lockConfirmed) }
@@ -165,6 +166,15 @@ fun SetupScreen(onBack: () -> Unit) {
             )
             Step(
                 number = 7,
+                title = "Wykrywanie bieżącej aplikacji",
+                description = "Włącz „Dostęp do danych o użyciu” dla Złap. Wtedy w WhatsAppie bańka pokaże wiadomości z WhatsAppa, " +
+                    "a na pulpicie – to, co wisi na pasku powiadomień.",
+                done = usageOk,
+                actionLabel = "Włącz",
+                onAction = { PhoneSetup.openUsageSettings(context) },
+            )
+            Step(
+                number = 8,
                 title = "Bańka nad innymi aplikacjami",
                 description = "Pozwól Złap „wyświetlać nad innymi aplikacjami”. Wtedy pomarańczowa bańka będzie widoczna np. w WhatsAppie.",
                 done = overlayOk,
@@ -173,7 +183,7 @@ fun SetupScreen(onBack: () -> Unit) {
             )
             if (PhoneSetup.isXiaomi) {
                 Step(
-                    number = 8,
+                    number = 9,
                     title = "Wyskakujące okna w tle",
                     description = "W „Inne uprawnienia” włącz „Wyświetlaj wyskakujące okna podczas działania w tle”. " +
                         "Bez tego stuknięcie bańki nic nie zrobi. Potem zaznacz, że gotowe.",
