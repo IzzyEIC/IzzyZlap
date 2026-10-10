@@ -129,7 +129,10 @@ class BubbleService : Service() {
                         app.settings.bubbleX = params.x
                         app.settings.bubbleY = params.y
                     } else {
-                        startActivity(CaptureActivity.intent(this@BubbleService))
+                        // Czytamy ekran teraz – za chwilę przykryje go okienko Złap
+                        val chat = ChatReaderService.readCurrentChat()
+                            ?.takeUnless { ForegroundApp.isLauncher(this@BubbleService, it.packageName) }
+                        startActivity(CaptureActivity.intent(this@BubbleService, chat))
                     }
                 }
             }

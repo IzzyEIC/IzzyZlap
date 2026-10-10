@@ -59,6 +59,7 @@ fun SetupScreen(onBack: () -> Unit) {
     val listenerOk = remember(tick) { PhoneSetup.listenerOk(context) }
     val overlayOk = remember(tick) { PhoneSetup.overlayOk(context) }
     val usageOk = remember(tick) { PhoneSetup.usageOk(context) }
+    val chatReaderOk = remember(tick) { PhoneSetup.chatReaderOk(context) }
     var popup by remember { mutableStateOf(settings.popupConfirmed) }
     var autostart by remember { mutableStateOf(settings.autostartConfirmed) }
     var locked by remember { mutableStateOf(settings.lockConfirmed) }
@@ -196,6 +197,17 @@ fun SetupScreen(onBack: () -> Unit) {
                     },
                 )
             }
+
+            Step(
+                number = 10,
+                title = "Rozpoznawanie otwartej rozmowy",
+                description = "Ułatwienia dostępu → Pobrane aplikacje → „Złap – rozpoznawanie rozmowy” → włącz. " +
+                    "Android ostrzeże, że aplikacja może widzieć ekran – Złap odczytuje tylko nazwę rozmowy, " +
+                    "i tylko w chwili stuknięcia bańki. MIUI czasem wyłącza to po restarcie – wtedy włącz ponownie.",
+                done = chatReaderOk,
+                actionLabel = "Otwórz",
+                onAction = { PhoneSetup.openAccessibilitySettings(context) },
+            )
 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

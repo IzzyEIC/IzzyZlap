@@ -72,10 +72,12 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val shared = sharedText(intent)
+        val chat = intent.getStringExtra(EXTRA_CHAT_PACKAGE)?.let { ChatInfo(it, intent.getStringExtra(EXTRA_CHAT_TITLE)) }
         setContent {
             ZlapTheme {
                 CaptureSheet(
                     sharedText = shared,
+                    chat = chat,
                     clipText = clipText.value,
                     onClose = { finish() },
                 )
@@ -108,9 +110,18 @@ class CaptureActivity : ComponentActivity() {
     companion object {
         private const val CLIP_MAX_AGE_MS = 5 * 60 * 1000L
 
-        fun intent(context: Context): Intent =
+        private const val EXTRA_CHAT_PACKAGE = "chatPackage"
+        private const val EXTRA_CHAT_TITLE = "chatTitle"
+
+        fun intent(context: Context, chat: ChatInfo? = null): Intent =
             Intent(context, CaptureActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .apply {
+                    if (chat != null) {
+                        putExtra(EXTRA_CHAT_PACKAGE, chat.packageName)
+                        putExtra(EXTRA_CHAT_TITLE, chat.title)
+                    }
+                }
     }
 }
 
@@ -118,13 +129,50 @@ private const val PRESELECT_MAX_AGE_MS = 30 * 60 * 1000L
 
 private enum class Mode { App, Shade, All }
 
+/** Rozmowa otwarta na ekranie trafia na górę listy – z ostatnią wiadomością, jeśli była. */
+private fun withOpenChatFirst(list: List<RecentMessage>, openChat: RecentMessage?): List<RecentMessage> {
+    val title = openChat?.sender ?: return list
+    val match = list.firstOrNull { message ->
+        val sender = message.sender ?: return@firstOrNull false
+        sender.equals(title, ignoreCase = true) ||
+            sender.contains(title, ignoreCase = true) ||
+            title.contains(sender, ignoreCase = true)
+    }
+    return if (match != null) listOf(match) + (list - match) else listOf(openChat) + list
+}
+
+/** Treść wiadomości, a gdy jej nie znamy (czat bez powiadomienia) – „Odpisać”. */
+private fun suggestedText(message: RecentMessage?): String = when {
+    message == null -> ""
+    message.text != null -> message.text
+    else -> "Odpisać"
+}
+
 @Composable
-private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> Unit) {
+private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val recent by remember { RecentStore.items(context) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    // null = jeszcze się wczytuje
+    val loaded by remember { RecentStore.items(context) }
+        .collectAsStateWithLifecycle<List<RecentMessage>?>(initialValue = null)
+    val recent = loaded.orEmpty()
     val listenerOk = remember { PhoneSetup.listenerOk(context) }
-    val where = remember { ForegroundApp.detect(context) }
+    // Ułatwienia dostępu wiedzą najdokładniej; bez nich – dane o użyciu
+    val where = remember {
+        chat?.let { ForegroundApp.Where.App(it.packageName, ForegroundApp.label(context, it.packageName)) }
+            ?: ForegroundApp.detect(context)
+    }
+    val appPackage = (where as? ForegroundApp.Where.App)?.packageName
+    // Otwarty czat, z którego nie było powiadomienia – i tak chcemy go móc złapać
+    val openChat = remember {
+        val title = chat?.title
+        val app = where as? ForegroundApp.Where.App
+        if (title != null && app != null) {
+            RecentMessage("chat:${app.packageName}:$title", app.packageName, app.label, title, null, System.currentTimeMillis(), null, null)
+        } else {
+            null
+        }
+    }
     val shade = remember { CaptureListener.visibleNow(context) }
     var mode by remember {
         mutableStateOf(
@@ -136,7 +184,7 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
         )
     }
     val shown = when (mode) {
-        Mode.App -> recent.filter { it.packageName == (where as? ForegroundApp.Where.App)?.packageName }
+        Mode.App -> withOpenChatFirst(recent.filter { it.packageName == appPackage }, openChat)
         Mode.Shade -> shade.orEmpty()
         Mode.All -> recent
     }
@@ -151,14 +199,14 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
     // Po wczytaniu listy (i po zmianie źródła) zaznaczamy najświeższą wiadomość.
     // W trybie aplikacji zawsze – to niemal na pewno ta, na którą właśnie patrzysz.
     LaunchedEffect(shown, mode) {
-        if (preselectedFor != mode && shown.isNotEmpty()) {
+        if (preselectedFor != mode && shown.isNotEmpty() && (mode == Mode.Shade || loaded != null)) {
             preselectedFor = mode
             selected = if (mode == Mode.App) {
                 shown.first()
             } else {
                 shown.firstOrNull { System.currentTimeMillis() - it.postedAt < PRESELECT_MAX_AGE_MS }
             }
-            if (!edited) text = selected?.text.orEmpty()
+            if (!edited) text = suggestedText(selected)
         }
     }
     var due by remember { mutableStateOf(context.app.settings.defaultDueDate()) }
@@ -278,7 +326,7 @@ private fun CaptureSheet(sharedText: String?, clipText: String?, onClose: () -> 
                                 selected = message.key == selected?.key,
                                 onClick = {
                                     selected = if (message.key == selected?.key) null else message
-                                    if (!edited) text = selected?.text.orEmpty()
+                                    if (!edited) text = suggestedText(selected)
                                 },
                             )
                         }

@@ -51,13 +51,15 @@ object ForegroundApp {
         return last
     }
 
+    fun isLauncher(c: Context, pkg: String): Boolean = pkg == launcherPackage(c)
+
     private fun launcherPackage(c: Context): String? =
         c.packageManager.resolveActivity(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
             PackageManager.MATCH_DEFAULT_ONLY,
         )?.activityInfo?.packageName
 
-    private fun label(c: Context, pkg: String): String = try {
+    fun label(c: Context, pkg: String): String = try {
         c.packageManager.getApplicationInfo(pkg, 0).loadLabel(c.packageManager).toString()
     } catch (e: PackageManager.NameNotFoundException) {
         pkg
