@@ -3,6 +3,23 @@
 package pl.izzy.zlap.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextDecoration
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -190,41 +207,125 @@ private fun TaskCard(
         if (overdue) "termin: ${dayLabel(due, today)}" else null,
     ).joinToString(" · ")
 
+    // Po odhaczeniu chwilę pokazujemy przekreślenie, potem zadanie znika
+    var checked by remember(task.id) { mutableStateOf(false) }
+    LaunchedEffect(checked) {
+        if (checked) {
+            delay(450)
+            onDone()
+        }
+    }
+    val contentAlpha by animateFloatAsState(if (checked) 0.45f else 1f, label = "alpha")
+    var menuOpen by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
-        Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 6.dp)) {
-            Text(task.title, style = MaterialTheme.typography.titleMedium)
-            if (meta.isNotEmpty()) {
+        Row(Modifier.padding(start = 6.dp, top = 6.dp, bottom = 6.dp)) {
+            CheckCircle(
+                checked = checked,
+                overdue = overdue,
+                onCheck = { checked = true },
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(top = 12.dp, bottom = 8.dp)
+                    .alpha(contentAlpha),
+            ) {
                 Text(
-                    meta,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textDecoration = if (checked) TextDecoration.LineThrough else null,
                 )
+                if (meta.isNotEmpty()) {
+                    Text(
+                        meta,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                if (onOpen != null) {
+                    Text(
+                        if (task.sender != null) "Otwórz rozmowę ↗" else "Otwórz ${task.sourceApp ?: "aplikację"} ↗",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(top = 6.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onOpen)
+                            .padding(vertical = 4.dp),
+                    )
+                }
             }
-            if (onOpen != null) {
-                Text(
-                    if (task.sender != null) "↗ Otwórz rozmowę: ${task.sender}" else "↗ Otwórz ${task.sourceApp ?: "aplikację"}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 6.dp).clickable(onClick = onOpen),
+            Box {
+                IconButton(onClick = { menuOpen = true }) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = "Więcej",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (due.isAfter(today)) "Przenieś na dziś" else "Przenieś na jutro") },
+                        leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onPostpone()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Wybierz dzień…") },
+                        leadingIcon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onPick()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Usuń") },
+                        leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onDelete()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Okrągłe pole do odhaczenia – puste kółko, po stuknięciu wypełnia się z ptaszkiem. */
+@Composable
+private fun CheckCircle(checked: Boolean, overdue: Boolean, onCheck: () -> Unit) {
+    val ring = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val fill by animateColorAsState(if (checked) ring else Color.Transparent, label = "fill")
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .clickable(enabled = !checked, onClick = onCheck),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(fill)
+                .border(2.dp, ring, CircleShape),
+        ) {
+            if (checked) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp),
                 )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                FilledTonalButton(onClick = onDone) {
-                    Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Zrobione")
-                }
-                TextButton(onClick = onPostpone) {
-                    Text(if (due.isAfter(today)) "Na dziś" else "Jutro")
-                }
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = onPick) { Icon(Icons.Filled.DateRange, contentDescription = "Inny dzień") }
-                IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Usuń") }
             }
         }
     }
