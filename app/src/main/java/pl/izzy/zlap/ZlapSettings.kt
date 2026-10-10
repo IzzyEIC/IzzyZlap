@@ -1,0 +1,36 @@
+package pl.izzy.zlap
+
+import android.content.Context
+import java.time.LocalTime
+
+class ZlapSettings(context: Context) {
+    private val prefs = context.getSharedPreferences("zlap", Context.MODE_PRIVATE)
+
+    /** Od której przypominamy (minuty od północy). */
+    var startMinutes: Int
+        get() = prefs.getInt("start", 18 * 60)
+        set(value) = prefs.edit().putInt("start", value).apply()
+
+    /** Po której milkniemy do następnego dnia. */
+    var endMinutes: Int
+        get() = prefs.getInt("end", 21 * 60)
+        set(value) = prefs.edit().putInt("end", value).apply()
+
+    var intervalMinutes: Int
+        get() = prefs.getInt("interval", 15)
+        set(value) = prefs.edit().putInt("interval", value).apply()
+
+    // Kroki konfiguracji MIUI, których system nie pozwala sprawdzić
+    var autostartConfirmed: Boolean
+        get() = prefs.getBoolean("autostart", false)
+        set(value) = prefs.edit().putBoolean("autostart", value).apply()
+
+    var lockConfirmed: Boolean
+        get() = prefs.getBoolean("lock", false)
+        set(value) = prefs.edit().putBoolean("lock", value).apply()
+
+    val startTime: LocalTime get() = LocalTime.of(startMinutes / 60, startMinutes % 60)
+    val endTime: LocalTime get() = LocalTime.of(endMinutes / 60, endMinutes % 60)
+
+    fun isInWindow(time: LocalTime): Boolean = !time.isBefore(startTime) && !time.isAfter(endTime)
+}
