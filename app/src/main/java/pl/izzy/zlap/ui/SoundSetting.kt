@@ -23,11 +23,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.IntentCompat
 import kotlinx.coroutines.launch
+import pl.izzy.zlap.R
 import pl.izzy.zlap.app
 import pl.izzy.zlap.reminders.Notifier
 import pl.izzy.zlap.reminders.SoundStore
 
 private const val LONG_SOUND_SEC = 15
+
+/** Własne dźwięki Złap (generowane przez tools/make_sounds.py). */
+private val BUILT_IN_SOUNDS = listOf(
+    Triple("Marimba", "Ciepłe „ding-dong” – przyjazne, polecane", R.raw.zlap_marimba),
+    Triple("Kropla", "Dwa miękkie „bloop” – najdelikatniejsze", R.raw.zlap_kropla),
+    Triple("Iskra", "Szybkie dzwoneczki – najbardziej zauważalne", R.raw.zlap_iskra),
+)
 
 @Composable
 fun SoundSettingRow() {
@@ -92,6 +100,12 @@ fun SoundSettingRow() {
             title = { Text("Dźwięk przypomnienia") },
             text = {
                 Column {
+                    BUILT_IN_SOUNDS.forEach { (name, description, res) ->
+                        SoundOption("♪ $name", description) {
+                            choosing = false
+                            scope.launch { setSound("android.resource://${context.packageName}/$res", name, owned = false) }
+                        }
+                    }
                     SoundOption("Dźwięki telefonu", "Lista dźwięków powiadomień") {
                         choosing = false
                         ringtonePicker.launch(
