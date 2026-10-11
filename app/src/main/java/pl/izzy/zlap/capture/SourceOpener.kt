@@ -26,6 +26,7 @@ object SourceOpener {
                 Intent(Intent.ACTION_VIEW, Uri.parse(link)).setPackage(task.sourcePackage)
             }
             if (start(context, intent)) return
+            if (intent.`package` != null && start(context, intent.setPackage(null))) return
         }
 
         // 3. Sama aplikacja

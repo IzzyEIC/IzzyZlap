@@ -3,6 +3,7 @@ package pl.izzy.zlap.capture
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import pl.izzy.zlap.app
+import pl.izzy.zlap.data.tidy
 import pl.izzy.zlap.setup.PhoneSetup
 import pl.izzy.zlap.ui.ZlapTheme
 import pl.izzy.zlap.ui.dayLabel
@@ -72,12 +74,14 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         CaptureListener.ensureConnected(this)
-        val shared = sharedText(intent)
+        val sharedLink = sharedLink(intent)
+        val shared = sharedLink?.text ?: sharedText(intent)
         val chat = intent.getStringExtra(EXTRA_CHAT_PACKAGE)?.let { ChatInfo(it, intent.getStringExtra(EXTRA_CHAT_TITLE)) }
         setContent {
             ZlapTheme {
                 CaptureSheet(
                     sharedText = shared,
+                    sharedLink = sharedLink,
                     chat = chat,
                     clipText = clipText.value,
                     onClose = { finish() },
@@ -99,6 +103,33 @@ class CaptureActivity : ComponentActivity() {
         return clip.getItemAt(0)?.coerceToText(this)?.toString()?.trim()?.ifEmpty { null }
     }
 
+    /**
+     * „Udostępnij” z linkiem (YouTube, przeglądarka, Instagram...): zapamiętujemy link,
+     * tytuł (temat udostępnienia) i aplikację, z której przyszedł.
+     */
+    private fun sharedLink(intent: Intent): RecentMessage? {
+        if (intent.action != Intent.ACTION_SEND) return null
+        val body = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return null
+        val url = URL_REGEX.find(body)?.value ?: return null
+        val pkg = referrer
+            ?.takeIf { it.scheme == "android-app" }
+            ?.host
+            ?.takeIf { it != packageName && it != "android" }
+        val title = intent.getStringExtra(Intent.EXTRA_SUBJECT)?.tidy()?.ifEmpty { null }
+            ?: body.replace(url, "").tidy().ifEmpty { null }
+            ?: url
+        return RecentMessage(
+            key = "share:$url",
+            packageName = pkg.orEmpty(),
+            appName = pkg?.let { ForegroundApp.label(this, it) } ?: Uri.parse(url).host.orEmpty(),
+            sender = null,
+            text = title,
+            postedAt = System.currentTimeMillis(),
+            contentIntent = null,
+            link = url,
+        )
+    }
+
     private fun sharedText(intent: Intent): String? = when (intent.action) {
         Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
         Intent.ACTION_SEND -> listOfNotNull(
@@ -110,6 +141,7 @@ class CaptureActivity : ComponentActivity() {
 
     companion object {
         private const val CLIP_MAX_AGE_MS = 5 * 60 * 1000L
+        private val URL_REGEX = Regex("https?://\\S+")
 
         private const val EXTRA_CHAT_PACKAGE = "chatPackage"
         private const val EXTRA_CHAT_TITLE = "chatTitle"
@@ -150,7 +182,7 @@ private fun suggestedText(message: RecentMessage?): String = when {
 }
 
 @Composable
-private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?, onClose: () -> Unit) {
+private fun CaptureSheet(sharedText: String?, sharedLink: RecentMessage?, chat: ChatInfo?, clipText: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // null = jeszcze się wczytuje
@@ -185,7 +217,8 @@ private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?
             }
         )
     }
-    val shown = when (mode) {
+    // Udostępniony link zawsze na górze, w każdym trybie
+    val shown = listOfNotNull(sharedLink) + when (mode) {
         Mode.App -> withOpenChatFirst(recent.filter { it.packageName == appPackage }, openChat)
         Mode.Shade -> shade.orEmpty()
         Mode.All -> recent
@@ -228,7 +261,7 @@ private fun CaptureSheet(sharedText: String?, chat: ChatInfo?, clipText: String?
             val id = context.app.tasks.add(
                 title = text,
                 due = due,
-                sourcePackage = source?.packageName,
+                sourcePackage = source?.packageName?.ifEmpty { null },
                 sourceApp = source?.appName,
                 sender = source?.sender,
                 link = source?.link,
@@ -399,7 +432,7 @@ private fun RecentRow(message: RecentMessage, selected: Boolean, onClick: () -> 
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Text(
-                "${message.appName} · ${message.sender ?: "?"}",
+                listOfNotNull(message.appName.ifEmpty { null }, message.sender).joinToString(" · "),
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
