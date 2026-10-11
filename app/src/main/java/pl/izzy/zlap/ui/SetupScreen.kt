@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import pl.izzy.zlap.app
+import pl.izzy.zlap.capture.ContactLinks
 import pl.izzy.zlap.reminders.Reminders
 import pl.izzy.zlap.setup.PhoneSetup
 
@@ -60,6 +61,11 @@ fun SetupScreen(onBack: () -> Unit) {
     val overlayOk = remember(tick) { PhoneSetup.overlayOk(context) }
     val usageOk = remember(tick) { PhoneSetup.usageOk(context) }
     val chatReaderOk = remember(tick) { PhoneSetup.chatReaderOk(context) }
+    val contactsOk = remember(tick) { ContactLinks.hasPermission(context) }
+    val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) PhoneSetup.openAppDetails(context)
+        manualRefresh++
+    }
     var popup by remember { mutableStateOf(settings.popupConfirmed) }
     var autostart by remember { mutableStateOf(settings.autostartConfirmed) }
     var locked by remember { mutableStateOf(settings.lockConfirmed) }
@@ -207,6 +213,15 @@ fun SetupScreen(onBack: () -> Unit) {
                 done = chatReaderOk,
                 actionLabel = "Otwórz",
                 onAction = { PhoneSetup.openAccessibilitySettings(context) },
+            )
+            Step(
+                number = 11,
+                title = "Kontakty",
+                description = "Złap szuka numeru osoby po nazwie czatu, żeby „Otwórz rozmowę” otwierało czat " +
+                    "właśnie z nią – także po restarcie telefonu. Tylko odczyt, nic nie jest wysyłane.",
+                done = contactsOk,
+                actionLabel = "Zezwól",
+                onAction = { contactsLauncher.launch(Manifest.permission.READ_CONTACTS) },
             )
 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {

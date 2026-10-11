@@ -264,7 +264,7 @@ private fun CaptureSheet(sharedText: String?, sharedLink: RecentMessage?, chat: 
                 sourcePackage = source?.packageName?.ifEmpty { null },
                 sourceApp = source?.appName,
                 sender = source?.sender,
-                link = source?.link,
+                link = source?.link ?: ContactLinks.linkForName(context, source?.packageName, source?.sender),
             )
             source?.contentIntent?.let { RecentStore.attach(id, it) }
             Toast.makeText(context, "Złapane ✓ Przypomnę ${context.app.settings.reminderLabel(due)}", Toast.LENGTH_SHORT).show()

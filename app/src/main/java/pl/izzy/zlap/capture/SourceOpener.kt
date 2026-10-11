@@ -18,8 +18,8 @@ object SourceOpener {
         // 1. Oryginalne powiadomienie: otwiera dokładnie ten czat (do restartu telefonu)
         RecentStore.intentFor(task.id)?.let { if (send(context, it)) return }
 
-        // 2. Trwały link z numeru telefonu
-        task.link?.let { link ->
+        // 2. Trwały link z numeru telefonu – zapisany albo znaleziony teraz w kontaktach
+        (task.link ?: ContactLinks.linkForName(context, task.sourcePackage, task.sender))?.let { link ->
             val intent = if (link.startsWith("smsto:")) {
                 Intent(Intent.ACTION_SENDTO, Uri.parse(link))
             } else {

@@ -15,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import pl.izzy.zlap.ZlapSettings
 import pl.izzy.zlap.capture.CaptureListener
 import pl.izzy.zlap.capture.ChatReaderService
+import pl.izzy.zlap.capture.ContactLinks
 import pl.izzy.zlap.capture.ForegroundApp
 
 /** Sprawdzanie i otwieranie ustawień, bez których Xiaomi usypia przypomnienia. */
@@ -56,7 +57,7 @@ object PhoneSetup {
     }
 
     fun needsAttention(c: Context, s: ZlapSettings): Boolean =
-        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || !listenerOk(c) || !usageOk(c) || !ChatReaderService.isEnabled(c) ||
+        !notificationsOk(c) || !exactAlarmsOk(c) || !batteryOk(c) || !listenerOk(c) || !usageOk(c) || !ChatReaderService.isEnabled(c) || !ContactLinks.hasPermission(c) ||
             (s.bubbleEnabled && !overlayOk(c)) ||
             (isXiaomi && (!s.autostartConfirmed || (s.bubbleEnabled && !s.popupConfirmed)))
 
