@@ -35,6 +35,9 @@ private val BUILT_IN_SOUNDS = listOf(
     Triple("Marimba", "Ciepłe „ding-dong” – przyjazne, polecane", R.raw.zlap_marimba),
     Triple("Kropla", "Dwa miękkie „bloop” – najdelikatniejsze", R.raw.zlap_kropla),
     Triple("Iskra", "Szybkie dzwoneczki – najbardziej zauważalne", R.raw.zlap_iskra),
+    Triple("Szkło", "Stuknięcie w kieliszek z echem – czyste, eleganckie", R.raw.zlap_szklo),
+    Triple("Puls", "Dwa krótkie „tik-tik” – dyskretne, nowoczesne", R.raw.zlap_puls),
+    Triple("Świt", "Ciepły akord w górę – najspokojniejszy", R.raw.zlap_swit),
 )
 
 @Composable

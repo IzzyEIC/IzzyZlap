@@ -13,13 +13,13 @@ PEAK = 0.5  # ok. -6 dBFS: zauważalny, ale nie krzykliwy
 OUT = Path(__file__).resolve().parent.parent / "app" / "src" / "main" / "res" / "raw"
 
 
-def tone(freq, start, length, partials, decay, attack=0.004, sweep=None):
+def tone(freq, start, length, partials, decay, attack=0.004, sweep=None, gain=1.0):
     """Jedna nuta: suma harmonicznych (mnożnik, głośność, szybkość wygaszania)."""
     def sample(t):
         t -= start
         if t < 0 or t > length:
             return 0.0
-        env = min(1.0, t / attack) * math.exp(-t / decay)
+        env = gain * min(1.0, t / attack) * math.exp(-t / decay)
         f = freq
         if sweep:
             f0, f1, dur = sweep
@@ -65,3 +65,27 @@ render("zlap_iskra", [
     tone(1318.51, 0.09, 1.2, BELL, 0.35),  # E6
     tone(1567.98, 0.18, 1.2, BELL, 0.45),  # G6
 ], 1.5)
+
+# Szkło: stuknięcie w kieliszek i cichsze echo – czyste, eleganckie
+GLASS = [(1, 1.0, 0), (2.32, 0.45, 4), (4.25, 0.2, 9), (6.63, 0.08, 16)]
+render("zlap_szklo", [
+    tone(1760.00, 0.00, 1.4, GLASS, 0.55),             # A6
+    tone(2093.00, 0.22, 1.2, GLASS, 0.45, gain=0.45),  # C7, echo
+], 1.6)
+
+# Puls: dwa krótkie, miękkie „tik-tik” jak w nowoczesnym UI – dyskretne, ale wyraźne
+SOFT_SQUARE = [(1, 1.0, 0), (3, 0.22, 30), (5, 0.08, 60)]
+render("zlap_puls", [
+    tone(880.00, 0.00, 0.35, SOFT_SQUARE, 0.07),             # A5
+    tone(1174.66, 0.13, 0.45, SOFT_SQUARE, 0.09, gain=0.9),  # D6
+], 0.65)
+
+# Świt: ciepły, wolniejszy akord w górę z lekkim „chorusem” – najspokojniejszy
+WARM = [(1, 1.0, 0), (2, 0.12, 6)]
+render("zlap_swit", [
+    tone(587.33, 0.00, 1.6, WARM, 0.6, attack=0.02),             # D5
+    tone(589.33, 0.00, 1.6, WARM, 0.6, attack=0.02, gain=0.5),   # D5 lekko rozstrojone
+    tone(739.99, 0.15, 1.5, WARM, 0.6, attack=0.02),             # F#5
+    tone(880.00, 0.30, 1.4, WARM, 0.7, attack=0.02),             # A5
+    tone(882.50, 0.30, 1.4, WARM, 0.7, attack=0.02, gain=0.5),   # A5 lekko rozstrojone
+], 1.8)

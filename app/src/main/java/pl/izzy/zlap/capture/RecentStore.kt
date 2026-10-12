@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import pl.izzy.zlap.app
 import pl.izzy.zlap.data.RecentEntity
+import pl.izzy.zlap.data.tidy
 import java.util.concurrent.ConcurrentHashMap
 
 data class RecentMessage(
@@ -67,7 +68,7 @@ object RecentStore {
                         packageName = it.packageName,
                         appName = it.appName,
                         sender = it.sender,
-                        text = it.text,
+                        text = it.text?.tidy()?.ifEmpty { null },
                         postedAt = it.postedAt,
                         contentIntent = intents[it.key],
                         link = it.link,
