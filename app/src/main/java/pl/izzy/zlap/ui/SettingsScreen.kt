@@ -53,6 +53,7 @@ fun SettingsScreen(onBack: () -> Unit, onSetup: () -> Unit) {
     var end by remember { mutableIntStateOf(settings.endMinutes) }
     var interval by remember { mutableIntStateOf(settings.intervalMinutes) }
     var choosingInterval by remember { mutableStateOf(false) }
+    var feedback by remember { mutableStateOf(false) }
     var bubble by remember { mutableStateOf(settings.bubbleEnabled) }
 
     fun changed() {
@@ -126,8 +127,16 @@ fun SettingsScreen(onBack: () -> Unit, onSetup: () -> Unit) {
                 description = "Uprawnienia, bez których przypomnienia mogą nie dotrzeć.",
                 onClick = onSetup,
             )
+            SettingRow(
+                title = "Zgłoś błąd lub pomysł",
+                value = "",
+                description = "Wyślij uwagę prosto do repozytorium Złap na GitHubie.",
+                onClick = { feedback = true },
+            )
         }
     }
+
+    if (feedback) FeedbackDialog(onDismiss = { feedback = false })
 
     if (choosingInterval) {
         AlertDialog(

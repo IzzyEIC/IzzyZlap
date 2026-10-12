@@ -33,6 +33,12 @@ Aplikacja musi być zawsze podpisana tym samym kluczem, inaczej telefon nie pozw
 
 Nie usuwaj folderu `IzzyZlap-klucz`. To jedyna kopia klucza.
 
+## Zgłaszanie błędów i pomysłów
+
+W aplikacji: ikona 🔧 na górze listy (albo ⚙️ → „Zgłoś błąd lub pomysł”). Złap otwiera gotowe zgłoszenie w zakładce **Issues** tego repo, z dopisaną wersją aplikacji i modelem telefonu. Wystarczy je wysłać.
+
+Żeby je przejrzeć i naprawić: w Claude Code napisz „przejrzyj zgłoszenia w IzzyZlap”.
+
 ## Plan
 
 | Etap | Zakres | Status |

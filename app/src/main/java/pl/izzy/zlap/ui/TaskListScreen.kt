@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
@@ -82,6 +83,7 @@ fun TaskListScreen(onSettings: () -> Unit, onSetup: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var adding by remember { mutableStateOf(false) }
+    var feedback by remember { mutableStateOf(false) }
 
     val resumeTick = rememberResumeTick()
     val setupNeeded = remember(resumeTick) { PhoneSetup.needsAttention(context, context.app.settings) }
@@ -101,6 +103,7 @@ fun TaskListScreen(onSettings: () -> Unit, onSetup: () -> Unit) {
             TopAppBar(
                 title = { Text("Złap", fontWeight = FontWeight.Bold) },
                 actions = {
+                    IconButton(onClick = { feedback = true }) { Icon(Icons.Filled.Build, contentDescription = "Zgłoś błąd lub pomysł") }
                     IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ustawienia") }
                 },
             )
@@ -163,6 +166,8 @@ fun TaskListScreen(onSettings: () -> Unit, onSetup: () -> Unit) {
             }
         }
     }
+
+    if (feedback) FeedbackDialog(onDismiss = { feedback = false })
 
     if (adding) {
         AddTaskDialog(
